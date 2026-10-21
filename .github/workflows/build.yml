@@ -1,0 +1,42 @@
+name: Build Reward Bin
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          mkdir project
+          unzip -q ./*.zip -d project
+          # localiza la carpeta que contiene build.gradle
+          DIR=$(dirname "$(find project -name build.gradle | head -n 1)")
+          echo "PROJECT_DIR=$DIR" >> "$GITHUB_ENV"
+          echo "Proyecto en: $DIR"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.1.1
+
+      - name: Build
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle build --no-daemon
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: RewardBin-jar
+          path: ${{ env.PROJECT_DIR }}/build/libs/*.jar
